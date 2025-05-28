@@ -45,7 +45,9 @@ function resize_image($old_image_path, $new_image_path,
             $image_to_file = 'imagepng';
             break;
         default:
-            echo 'File must be a JPEG, GIF, or PNG image.'.$image_type;            
+            echo 'File must be a JPEG, GIF, or PNG image.'.$image_type;
+            echo $old_image_path;
+            echo $image_info[0] . " " . $image_info[1] . " " . $image_info[2];            
             exit;
     }
 

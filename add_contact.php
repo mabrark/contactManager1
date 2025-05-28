@@ -32,7 +32,7 @@
     $phone_number = filter_input(INPUT_POST, 'phone_number');
     $status = filter_input(INPUT_POST, 'status'); // assigns the value of the selected radio button
     $dob = filter_input(INPUT_POST, 'dob');
-    $image_name = $_FILES('file1')
+    $image_name = $_FILES['file1']['name'];
 
     require_once('database.php');
     $queryContacts = 'SELECT * FROM contacts';
