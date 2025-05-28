@@ -25,7 +25,7 @@
     {
         if ($email_address == $contact["emailAddress"] && $contact_id != $contact["contactID"])
         {
-            $_SESSION["add_error"] = "Invalid data, Duplicate Email Address. Try again.";
+            $_SESSION["add_error"] = "Invalid datas, Duplicate Email Address. Try again.";
 
             $url = "error.php";
             header("Location: " . $url);
@@ -36,16 +36,16 @@
     if ($first_name == null || $last_name == null ||
         $email_address == null || $phone_number == null ||
         $dob == null)
-    {
-        $_SESSION["add_error"] = "Invalid contact data, Check all fields and try again.";
+       {
+         $_SESSION["add_error"] = "Invalid contact data, Check all fields and try again.";
 
-        $url = "error.php";
-        header("Location: " . $url);
-        die();
-    }
+         $url = "error.php";
+         header("Location: " . $url);
+         die();
+       }
+
     else
     {        
-
         require_once('database.php');
 
         // Update the contact in the database

@@ -1,3 +1,3 @@
-<footer>
-    <h2>Copyright &copy; 2025 - All rights reserved</h2>
-</footer>
+<header>
+  <h1>Contact Manager</h1>
+</header>

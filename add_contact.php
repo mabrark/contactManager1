@@ -75,7 +75,7 @@
         $query = 'INSERT INTO contacts
             (firstName, lastName, emailAddress, phone, status, dob, imageNamr)
             VALUES
-            (:firstName, :lastName, :emailAddress, :phone, :status, :dob, imageName)';
+            (:firstName, :lastName, :emailAddress, :phone, :status, :dob, :imageName)';
 
         $statement = $db->prepare($query);
         $statement->bindValue(':firstName', $first_name);
