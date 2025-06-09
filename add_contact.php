@@ -1,100 +1,86 @@
 <?php
-    session_start();
+session_start();
 
-    require_once 'image_util.php'; //the process_image function
+$first_name = filter_input(INPUT_POST, 'first_name');
+$last_name = filter_input(INPUT_POST, 'last_name');
+$email_address = filter_input(INPUT_POST, 'email_address');
+$phone_number = filter_input(INPUT_POST, 'phone_number');
+$status = filter_input(INPUT_POST, 'status');
+$dob = filter_input(INPUT_POST, 'dob');
+$type_id = filter_input(INPUT_POST, 'type_id', FILTER_VALIDATE_INT);
+$image = $_FILES['image'];
 
-    $image_dir = 'images';
-    $image_dir_path = getcwd() . DIRECTORY_SEPARATOR . $image_dir;
+require_once('database.php');
+require_once('image_util.php');
 
-    if (isset($_FILES['file1']))
-    {
-        $filename = $_FILES['file1']['name'];
+$base_dir = 'images/';
 
-        if (!empty($filename))
-        {
-            $source = $_FILES['file1']['tmp_name'];
-            $target = $image_dir_path . DIRECTORY_SEPARATOR . $filename;
+// Check for duplicate email
+$queryContacts = 'SELECT * FROM contacts';
+$statement1 = $db->prepare($queryContacts);
+$statement1->execute();
+$contacts = $statement1->fetchAll();
+$statement1->closeCursor();
 
-            move_uploaded_file($source, $target);
-
-            // Create the '400' '100' version of the image
-            process_image($image_dir_path, $filename);
-        }
-    }
-
-
-    // get data from the form
-    $first_name = filter_input(INPUT_POST, 'first_name');
-    // alternative
-    // $first_name = $_POST['first_name'];
-    $last_name = filter_input(INPUT_POST, 'last_name');
-    $email_address = filter_input(INPUT_POST, 'email_address');
-    $phone_number = filter_input(INPUT_POST, 'phone_number');
-    $status = filter_input(INPUT_POST, 'status'); // assigns the value of the selected radio button
-    $dob = filter_input(INPUT_POST, 'dob');
-    $image_name = $_FILES['file1']['name'];
-
-    require_once('database.php');
-    $queryContacts = 'SELECT * FROM contacts';
-    $statement1 = $db->prepare($queryContacts);
-    $statement1->execute();
-    $contacts = $statement1->fetchAll();
-
-    $statement1->closeCursor();
-
-    foreach ($contacts as $contact)
-    {
-        if ($email_address == $contact["emailAddress"])
-        {
-            $_SESSION["add_error"] = "Invalid data, Duplicate Email Address. Try again.";
-
-            $url = "error.php";
-            header("Location: " . $url);
-            die();
-        }
-    }
-
-    if ($first_name == null || $last_name == null ||
-        $email_address == null || $phone_number == null ||
-        $dob == null)
-    {
-        $_SESSION["add_error"] = "Invalid contact data, Check all fields and try again.";
-
-        $url = "error.php";
-        header("Location: " . $url);
+foreach ($contacts as $contact) {
+    if ($email_address === $contact["emailAddress"]) {
+        $_SESSION["add_error"] = "Invalid data, Duplicate Email Address. Try again.";
+        header("Location: error.php");
         die();
     }
-    else
-    {
+}
 
-        
+if ($first_name === null || $last_name === null || $email_address === null || 
+    $phone_number === null || $dob === null || $type_id === null) {
+    $_SESSION["add_error"] = "Invalid contact data, Check all fields and try again.";
+    header("Location: error.php");
+    die();
+}
 
-        require_once('database.php');
+$image_name = '';  // default empty
 
-        // Add the contact to the database
-        $query = 'INSERT INTO contacts
-            (firstName, lastName, emailAddress, phone, status, dob, imageNamr)
-            VALUES
-            (:firstName, :lastName, :emailAddress, :phone, :status, :dob, :imageName)';
+if ($image && $image['error'] === UPLOAD_ERR_OK) {
+    // Process new image
+    $original_filename = basename($image['name']);
+    $upload_path = $base_dir . $original_filename;
+    move_uploaded_file($image['tmp_name'], $upload_path);
+    process_image($base_dir, $original_filename);
 
-        $statement = $db->prepare($query);
-        $statement->bindValue(':firstName', $first_name);
-        $statement->bindValue(':lastName', $last_name);
-        $statement->bindValue(':emailAddress', $email_address);
-        $statement->bindValue(':phone', $phone_number);
-        $statement->bindValue(':status', $status);
-        $statement->bindValue(':dob', $dob);
-        $statement->bindValue(':imageName', $image_name);
+    // Save _100 version in DB
+    $dot_pos = strrpos($original_filename, '.');
+    $name_100 = substr($original_filename, 0, $dot_pos) . '_100' . substr($original_filename, $dot_pos);
+    $image_name = $name_100;
+} else {
+    // Use placeholder
+    $placeholder = 'placeholder.jpg';
+    $placeholder_100 = 'placeholder_100.jpg';
+    $placeholder_400 = 'placeholder_400.jpg';
 
-        $statement->execute();
-        $statement->closeCursor();
-
+    if (!file_exists($base_dir . $placeholder_100) || !file_exists($base_dir . $placeholder_400)) {
+        process_image($base_dir, $placeholder);
     }
-    $_SESSION["fullName"] = $first_name . " " . $last_name;
 
-    // redirect to confirmation page
-    $url = "confirmation.php";
-    header("Location: " . $url);
-    die(); // releases add_contact.php from memory
+    $image_name = $placeholder_100;
+}
 
-?>
+// Add contact
+$query = 'INSERT INTO contacts
+    (firstName, lastName, emailAddress, phone, status, dob, typeID, imageName)
+    VALUES
+    (:firstName, :lastName, :emailAddress, :phone, :status, :dob, :typeID, :imageName)';
+
+$statement = $db->prepare($query);
+$statement->bindValue(':firstName', $first_name);
+$statement->bindValue(':lastName', $last_name);
+$statement->bindValue(':emailAddress', $email_address);
+$statement->bindValue(':phone', $phone_number);
+$statement->bindValue(':status', $status);
+$statement->bindValue(':dob', $dob);
+$statement->bindValue(':typeID', $type_id);
+$statement->bindValue(':imageName', $image_name);
+$statement->execute();
+$statement->closeCursor();
+
+$_SESSION["fullName"] = $first_name . " " . $last_name;
+header("Location: add_confirmation.php");
+die();
